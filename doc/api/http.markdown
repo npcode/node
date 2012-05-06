@@ -32,6 +32,12 @@ Returns a new web server object.
 The `requestListener` is a function which is automatically
 added to the `'request'` event.
 
+## http.createClient([port], [host])
+
+This function is **deprecated**; please use
+[http.request()](#http_http_request_options_callback) instead. Constructs a new
+HTTP client. `port` and `host` refer to the server to be connected to.
+
 ## Class: http.Server
 
 This is an `EventEmitter` with the following events:
@@ -117,13 +123,18 @@ sent to the server on that socket.
 
 If a client connection emits an 'error' event - it will forwarded here.
 
-### server.listen(port, [hostname], [callback])
+### server.listen(port, [hostname], [backlog], [callback])
 
 Begin accepting connections on the specified port and hostname.  If the
 hostname is omitted, the server will accept connections directed to any
 IPv4 address (`INADDR_ANY`).
 
 To listen to a unix socket, supply a filename instead of port and hostname.
+
+Backlog is the maximum length of the queue of pending connections.
+The actual length will be determined by your OS through sysctl settings such as
+`tcp_max_syn_backlog` and `somaxconn` on linux. The default value of this
+parameter is 511 (not 512).
 
 This function is asynchronous. The last parameter `callback` will be added as
 a listener for the ['listening'](net.html#event_listening_) event.
@@ -247,9 +258,9 @@ Also `request.httpVersionMajor` is the first integer and
 
 ### request.setEncoding([encoding])
 
-Set the encoding for the request body. Either `'utf8'` or `'binary'`. Defaults
-to `null`, which means that the `'data'` event will emit a `Buffer` object..
-
+Set the encoding for the request body. See
+[stream.setEncoding()](stream.html#stream_stream_setencoding_encoding)
+for more information.
 
 ### request.pause()
 
@@ -532,7 +543,7 @@ Example:
 In node 0.5.3+ there is a new implementation of the HTTP Agent which is used
 for pooling sockets used in HTTP client requests.
 
-Previously, a single agent instance help the pool for single host+port. The
+Previously, a single agent instance helped pool for a single host+port. The
 current implementation now holds sockets for any number of hosts.
 
 The current HTTP Agent also defaults client requests to using
@@ -862,9 +873,9 @@ The response trailers object. Only populated after the 'end' event.
 
 ### response.setEncoding([encoding])
 
-Set the encoding for the response body. Either `'utf8'`, `'ascii'`, or
-`'base64'`. Defaults to `null`, which means that the `'data'` event will emit
-a `Buffer` object.
+Set the encoding for the response body. See
+[stream.setEncoding()](stream.html#stream_stream_setencoding_encoding)
+for more information.
 
 ### response.pause()
 

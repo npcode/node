@@ -69,6 +69,8 @@ typedef class ReqWrap<uv_write_t> WriteWrap;
 
 static Persistent<String> buffer_sym;
 static Persistent<String> write_queue_size_sym;
+static Persistent<String> onread_sym;
+static Persistent<String> oncomplete_sym;
 static SlabAllocator slab_allocator(SLAB_SIZE);
 static bool initialized;
 
@@ -81,9 +83,10 @@ void StreamWrap::Initialize(Handle<Object> target) {
 
   HandleWrap::Initialize(target);
 
-  buffer_sym = Persistent<String>::New(String::NewSymbol("buffer"));
-  write_queue_size_sym =
-    Persistent<String>::New(String::NewSymbol("writeQueueSize"));
+  buffer_sym = NODE_PSYMBOL("buffer");
+  write_queue_size_sym = NODE_PSYMBOL("writeQueueSize");
+  onread_sym = NODE_PSYMBOL("onread");
+  oncomplete_sym = NODE_PSYMBOL("oncomplete");
 }
 
 
@@ -162,15 +165,22 @@ void StreamWrap::OnReadCommon(uv_stream_t* handle, ssize_t nread,
   // uv_close() on the handle.
   assert(wrap->object_.IsEmpty() == false);
 
-  Local<Object> slab = slab_allocator.Shrink(wrap->object_,
-                                             buf.base,
-                                             nread < 0 ? 0 : nread);
-
   if (nread < 0)  {
+    // If libuv reports an error or EOF it *may* give us a buffer back. In that
+    // case, return the space to the slab.
+    if (buf.base != NULL) {
+      slab_allocator.Shrink(wrap->object_, buf.base, 0);
+    }
+
     SetErrno(uv_last_error(uv_default_loop()));
-    MakeCallback(wrap->object_, "onread", 0, NULL);
+    MakeCallback(wrap->object_, onread_sym, 0, NULL);
     return;
   }
+
+  assert(buf.base != NULL);
+  Local<Object> slab = slab_allocator.Shrink(wrap->object_,
+                                             buf.base,
+                                             nread);
 
   if (nread == 0) return;
   assert(static_cast<size_t>(nread) <= buf.len);
@@ -201,7 +211,7 @@ void StreamWrap::OnReadCommon(uv_stream_t* handle, ssize_t nread,
     argc++;
   }
 
-  MakeCallback(wrap->object_, "onread", argc, argv);
+  MakeCallback(wrap->object_, onread_sym, argc, argv);
 }
 
 
@@ -306,7 +316,7 @@ void StreamWrap::AfterWrite(uv_write_t* req, int status) {
     req_wrap->object_->GetHiddenValue(buffer_sym),
   };
 
-  MakeCallback(req_wrap->object_, "oncomplete", 4, argv);
+  MakeCallback(req_wrap->object_, oncomplete_sym, ARRAY_SIZE(argv), argv);
 
   delete req_wrap;
 }
@@ -353,7 +363,7 @@ void StreamWrap::AfterShutdown(uv_shutdown_t* req, int status) {
     Local<Value>::New(req_wrap->object_)
   };
 
-  MakeCallback(req_wrap->object_, "oncomplete", 3, argv);
+  MakeCallback(req_wrap->object_, oncomplete_sym, ARRAY_SIZE(argv), argv);
 
   delete req_wrap;
 }

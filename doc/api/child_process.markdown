@@ -250,7 +250,7 @@ See also: `child_process.exec()` and `child_process.fork()`
   * `maxBuffer` {Number} (Default: 200*1024)
   * `killSignal` {String} (Default: 'SIGTERM')
 * `callback` {Function} called with the output when process terminates
-  * `code` {Integer} Exit code
+  * `error` {Error}
   * `stdout` {Buffer}
   * `stderr` {Buffer}
 * Return: ChildProcess object
@@ -307,7 +307,7 @@ the child process is killed.
   * `maxBuffer` {Number} (Default: 200*1024)
   * `killSignal` {String} (Default: 'SIGTERM')
 * `callback` {Function} called with the output when process terminates
-  * `code` {Integer} Exit code
+  * `error` {Error}
   * `stdout` {Buffer}
   * `stderr` {Buffer}
 * Return: ChildProcess object
@@ -329,10 +329,6 @@ leaner than `child_process.exec`. It has the same options.
   * `setsid` {Boolean}
   * `encoding` {String} (Default: 'utf8')
   * `timeout` {Number} (Default: 0)
-* `callback` {Function} called with the output when process terminates
-  * `code` {Integer} Exit code
-  * `stdout` {Buffer}
-  * `stderr` {Buffer}
 * Return: ChildProcess object
 
 This is a special case of the `spawn()` functionality for spawning Node
